@@ -1,0 +1,20 @@
+{
+  "extends": "./tsconfig.json",
+  "include": [
+    "source"
+  ],
+  "compilerOptions": {
+
+    // Input
+    "rootDir": "source",
+
+    // Output
+    "outDir": "out",
+    "target": "ESNext",
+    "sourceMap": true,
+    "declaration": true,
+    "declarationMap": true,
+    "preserveConstEnums": false,
+    "noEmit": false,
+  }
+}

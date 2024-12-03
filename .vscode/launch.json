@@ -1,0 +1,23 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "rollup",
+      "type": "node",
+      "request": "launch",
+      "skipFiles": [
+        "<node_internals>/**",
+        "**/node_modules/**"
+      ],
+      "cwd": "${workspaceFolder}",
+      "program": "./node_modules/rollup/dist/bin/rollup",
+      "args": [
+        "-c"
+      ],
+      "console": "internalConsole",
+      "outputCapture": "std",
+      "internalConsoleOptions": "openOnSessionStart"
+    }
+  ],
+  "compounds": []
+}

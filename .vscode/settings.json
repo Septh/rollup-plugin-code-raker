@@ -1,0 +1,35 @@
+{
+  "typescript.tsdk": "node_modules/typescript/lib",
+  "debug.javascript.terminalOptions": {
+    "skipFiles": [
+      "<node_internals>/**",
+      "**/node_modules/**"
+    ]
+  },
+  "vsicons.associations.folders": [
+    {
+      "icon": "test",
+      "extensions": [
+        "fixtures"
+      ],
+      "format": "svg"
+    }
+  ],
+  "vsicons.associations.files": [
+    {
+      "icon": "tsconfig",
+      "extensions": [],
+      "filenamesGlob": [
+        "tsconfig.debug",
+      ],
+      "extensionsGlob": [
+        "json"
+      ],
+      "filename": true,
+      "format": "svg",
+    }
+  ],
+  "cSpell.enableFiletypes": [
+    "!javascript"
+  ]
+}

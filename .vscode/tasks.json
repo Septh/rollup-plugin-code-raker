@@ -1,0 +1,29 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "tsc:clean",
+      "type": "shell",
+      "command": "rm -rf ./out",
+    },
+    {
+      "label": "tsc:build",
+      "group": {
+        "kind": "build",
+        "isDefault": true,
+      },
+      "type": "typescript",
+      "tsconfig": "./tsconfig.build.json",
+      "option": "watch",
+      "problemMatcher": [
+        "$tsc-watch"
+      ],
+      "isBackground": true,
+      "dependsOn": [ "tsc:clean" ],
+      "dependsOrder": "sequence",
+      "runOptions": {
+        "runOn": "folderOpen"
+      },
+    }
+  ]
+}
