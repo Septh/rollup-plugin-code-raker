@@ -8,7 +8,7 @@
 
 ## Features
 - Removes leftover comments, `console.*` calls and `debugger` statements from your bundle.
-- Does not come in the way of treeshaking: function annotations are removed *after* Rollup/Vite did their magic.
+- Does not come in the way of treeshaking: remaining function annotations are removed *after* Rollup/Vite did their magic.
 - Fully configurable.
 - Comes with sensible defaults for both application and library bundling.
 
@@ -30,16 +30,16 @@ import rake from 'rollup-plugin-code-raker'
 export default {
     ...
     plugins: [
-        rake()
+        rake(/* options */)
     ]
 }
 ```
 
 ## Options
 code-raker uses *presets* to decide what to remove from code.
-- The default preset is a "kill'em all" preset that blindly removes all comments (including licensing and documentation comments), all `console.*` calls and `debugger` statements.
-- The `application` preset preserves licensing comments and `console.info`, `console.warn`, `console.error` and `console.debug` calls.
-- The `library` preset preserves licensing and documentation comments.
+- The default preset is a "kill'em all" preset that blindly **removes** all comments (including licensing and documentation comments), all `console.*` calls and `debugger` statements.
+- The `application` preset **preserves** licensing comments and `console.info`, `console.warn`, `console.error` and `console.debug` calls.
+- The `library` preset **preserves** licensing and documentation comments.
 
 > [!NOTE]
 > - *Licensing* comments are block comments that start with `/*!` followed by a space or a newline, or documentation comments that contain the `@license` tag.
