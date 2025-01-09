@@ -6,30 +6,20 @@
       "**/node_modules/**"
     ]
   },
-  "vsicons.associations.folders": [
+  "cSpell.enabledFileTypes": {
+    "*": true,
+    "javascript": false
+  },
+  "nodejs-testing.extensions": [
     {
-      "icon": "test",
       "extensions": [
-        "fixtures"
+        "mts",
+        "cts",
+        "ts"
       ],
-      "format": "svg"
+      "parameters": [
+        "--import", "@septh/ts-run"
+      ]
     }
-  ],
-  "vsicons.associations.files": [
-    {
-      "icon": "tsconfig",
-      "extensions": [],
-      "filenamesGlob": [
-        "tsconfig.debug",
-      ],
-      "extensionsGlob": [
-        "json"
-      ],
-      "filename": true,
-      "format": "svg",
-    }
-  ],
-  "cSpell.enableFiletypes": [
-    "!javascript"
   ]
 }

@@ -65,29 +65,29 @@ export interface Options {
     debugger?: boolean
 }
 
+interface Preset {
+    licenses?:    (comment: string) => boolean
+    docs?:        (comment: string) => boolean
+    annotations?: boolean
+    console?:     (method: string, statement: string) => boolean
+    debugger?:    boolean
+}
+
+type PresetNames = Required<Options>['preset']
+
 /**
  * A plugin that 'rakes' your code to remove dead leaves
  * such as `console` calls, `debugger` statements, and useless comments.
  */
 export function codeRaker(options: Options = {}): Plugin {
 
-    type CommentsOption = Exclude<Options['comments'], boolean | undefined>
-    interface Preset {
-        licenses?:    Exclude<CommentsOption['licenses'], boolean>
-        docs?:        Exclude<CommentsOption['docs'],     boolean>
-        annotations?: boolean
-        console?:     (method: string, statement: string) => boolean
-        debugger?:    boolean
-    }
-
-    type PresetName = Required<Options>['preset']
     const remove = () => true
     const allConsoleMethods = Object.entries(console).reduce((methods, [ name, prop ]) => {
         if (typeof prop === 'function' && typeof name === 'string')
             methods.push(name)
         return methods
     }, [] as string[])
-    const presets: Record<PresetName | 'all' | 'none', Preset> = {
+    const presets: Record<PresetNames | 'all' | 'none', Preset> = {
         all: {
             licenses: remove,
             docs: remove,
@@ -182,7 +182,6 @@ export function codeRaker(options: Options = {}): Plugin {
 
         function getCommentsConfig(): Pick<Preset, 'licenses' | 'docs' | 'annotations'> {
             const { comments: option } = options
-
             if (option === undefined) {
                 const { licenses, docs, annotations } = preset
                 return { licenses, docs, annotations }
@@ -219,7 +218,6 @@ export function codeRaker(options: Options = {}): Plugin {
 
         function getConsoleConfig(): Pick<Preset, 'console'> {
             const { console: option } = options
-
             if (option === undefined)
                 return { console: preset.console }
             if (isBoolean(option))
@@ -240,7 +238,6 @@ export function codeRaker(options: Options = {}): Plugin {
 
         function getDebuggerConfig(): Pick<Preset, 'debugger'> {
             const { debugger: option } = options
-
             if (option === undefined)
                 return { debugger: preset.debugger }
             if (isBoolean(option))

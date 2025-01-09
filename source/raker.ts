@@ -122,7 +122,7 @@ export class Raker extends MagicString {
                     case CharCode.openBrace:
                         ++pos
                         if (inTemplate)
-                            braces++
+                            ++braces
                         break
 
                     case CharCode.closeBrace:
@@ -135,7 +135,7 @@ export class Raker extends MagicString {
                         ++pos
                         if (lineTerminators.has(char)) {
                             if (pos < end && char === CharCode.carriageReturn && code.charCodeAt(pos) === CharCode.lineFeed)
-                                pos++
+                                ++pos
 
                             // Remove empty lines.
                             start = pos
