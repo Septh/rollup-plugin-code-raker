@@ -62,8 +62,8 @@ export const regexes = {
     licenses: /@?license\b/g,
     docs: /\bdocumentation\b/g,
     annotations: /[@#]__(?:PURE|NO_SIDE_EFFECTS)__/g,
-    debuggerStatements: /\bdebugger\b/g,
-    consoleCalls: /\bconsole.(\w+)/g
+    consoleCalls: /\bconsole.(\w+)/g,
+    debuggerStatements: /\bdebugger\b/g
 } as const
 
 export const stats = {
@@ -73,4 +73,5 @@ export const stats = {
     numDocs: Array.from(presets.matchAll(regexes.docs)).length,
     numAnnotations: Array.from(presets.matchAll(regexes.annotations)).length,
     numConsoleCalls: Array.from(presets.matchAll(regexes.consoleCalls)).length,
+    numDebuggerStatements: Array.from(presets.matchAll(regexes.debuggerStatements)).length
 }

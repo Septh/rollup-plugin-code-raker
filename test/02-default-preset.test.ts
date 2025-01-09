@@ -150,7 +150,7 @@ suite('with "debugger: false"', async () => {
 
     test('preserves all "debugger" statements', (t: TestContext) => {
         const matches = Array.from(code.matchAll(regexes.debuggerStatements))
-        t.assert.strictEqual(matches.length, 1)
+        t.assert.strictEqual(matches.length, stats.numDebuggerStatements)
     })
 })
 
@@ -159,8 +159,7 @@ suite('"comments" option with callback overrides', async () => {
         comments: {
             licenses: comment => comment.includes('@license'),  // Remove jsDoc-style licenses (there is 1)
             docs: comment => comment.includes('@private')       // Remove doc comments with @private tag (there is 1)
-        },
-        console: method => method.startsWith('group')           // Remove console.group() and console.groupEnd() (there are 2)
+        }
     })
 
     test('preserves license when callback returns false', (t: TestContext) => {
@@ -172,6 +171,12 @@ suite('"comments" option with callback overrides', async () => {
         const matches = Array.from(code.matchAll(regexes.licenses))
         t.assert.strictEqual(matches.length, stats.numDocs - 1)
     })
+})
+
+suite('"console" option with callback overrides', async () => {
+    const code = await bundle(presets, {
+        console: method => method.startsWith('group')           // Remove console.group() and console.groupEnd() (there are 2)
+    })
 
     test('preserves console.* when callback returns false', (t: TestContext) => {
         const matches = Array.from(code.matchAll(regexes.consoleCalls))
@@ -179,17 +184,21 @@ suite('"comments" option with callback overrides', async () => {
     })
 })
 
-suite('"console" option with include/exclude object overrides', async () => {
-    test('preserves console.* calls filtered by include', async (t: TestContext) => {
-        const methods = [ 'dir', 'group', 'groupEnd' ]          // Remove 4 calls (2 x dir, 1 x group, 1 x groupEnd)
-        const code = await bundle(presets, { console: { include: methods }})
+suite('"console" option with "include" overrides', async () => {
+    const methods = [ 'dir', 'group', 'groupEnd' ]          // Remove 4 calls (2 x dir, 1 x group, 1 x groupEnd)
+    const code = await bundle(presets, { console: { include: methods }})
+
+    test('removes console.* calls set by include[]', (t: TestContext) => {
         const matches = Array.from(code.matchAll(regexes.consoleCalls))
         t.assert.strictEqual(matches.length, stats.numConsoleCalls - 4)
     })
+})
 
-    test('preserves console.* calls filtered by exclude', async (t: TestContext) => {
-        const methods = [ 'info', 'warn', 'error', 'debug' ]    // Keep these 4, remove all others
-        const code = await bundle(presets, { console: { exclude: methods }})
+suite('"console" option with "exclude" overrides', async () => {
+    const methods = [ 'info', 'warn', 'error', 'debug' ]    // Keep these 4, remove all others
+    const code = await bundle(presets, { console: { exclude: methods }})
+
+    test('preserves console.* calls filtered by exclude[]', (t: TestContext) => {
         const matches = Array.from(code.matchAll(regexes.consoleCalls))
         t.assert.strictEqual(matches.length, methods.length)
     })
