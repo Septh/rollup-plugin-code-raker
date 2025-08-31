@@ -39,14 +39,14 @@
     "!*.map"
   ],
   "scripts": {
-    "prebuild": "npm run clean",
-    "build": "npm run build:ts && npm run build:dts && rollup -c",
-    "build:ts": "tsc -p tsconfig.build.json --removeComments",
-    "build:dts": "tsc -p tsconfig.build.json --declaration --emitDeclarationOnly --removeComments false",
     "clean": "rimraf dist out",
+    "prebuild": "npm run clean",
+    "build": "npm run build:js && npm run build:dts && rollup -c",
+    "build:js": "tsc -p tsconfig.build.json --declaration false --declarationMap false --removeComments",
+    "build:dts": "tsc -p tsconfig.build.json --declaration --emitDeclarationOnly --removeComments false",
     "pretest": "npm run build",
-    "test": "npm run testOnly",
-    "testOnly": "node --import=@septh/ts-run --test \"test/**/*.test.ts\""
+    "test": "node --import=@septh/ts-run --test \"test/**/*.test.ts\"",
+    "testOnly": "npm run test --ignore-scripts"
   },
   "peerDependencies": {
     "rollup": "^4.0.0"
