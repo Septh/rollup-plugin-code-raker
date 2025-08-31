@@ -1,25 +1,24 @@
 import fs from 'node:fs'
 import { defineConfig } from 'rollup'
 import nodeExternals from 'rollup-plugin-node-externals'
-import { codeRaker } from './out/index.js'
+import nodeResolve_ from '@rollup/plugin-node-resolve'
+import commonJS_ from '@rollup/plugin-commonjs'
+import codeRaker from './out/index.js'
 
 /**
- * Workaround for the wrong typings in all rollup plugins.
+ * Workaround for the wrong typings in all rollup plugins
+ * (see https://github.com/rollup/plugins/issues/1541#issuecomment-1837153165)
  * @template T
- * @param {{ default: { default: T } }} module
- * @returns {T}
- * @see {@link https://github.com/rollup/plugins/issues/1541#issuecomment-1837153165}
+ * @param {{ default: T }} plugin
  */
-const rollupPlugin = ({ default: plugin }) => /** @type {T} */(plugin)
-const commonjs = rollupPlugin(await import('@rollup/plugin-commonjs'))
-const nodeResolve = rollupPlugin(await import('@rollup/plugin-node-resolve'))
-
-const outDir = './dist'
+const fixRollupPluginTypings = (plugin) => /** @type {T} */ (plugin)
+const nodeResolve = fixRollupPluginTypings(nodeResolve_)
+const commonJS = fixRollupPluginTypings(commonJS_)
 
 export default defineConfig({
     input: './out/index.js',
     output: {
-        dir: outDir,
+        file: './dist/index.js',
         format: 'esm',
         generatedCode: 'es2015',
         sourcemap: true,
@@ -29,7 +28,7 @@ export default defineConfig({
     plugins: [
         nodeExternals(),
         nodeResolve(),
-        commonjs(),
+        commonJS(),
         codeRaker({
             preset: 'application',
             console: true,
