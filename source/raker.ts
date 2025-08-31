@@ -99,8 +99,16 @@ export class Raker extends MagicString {
                     // Skip strings altogether so we don't process their content inadvertently.
                     case CharCode.quotationMark:
                     case CharCode.apostrophe:
-                        while (++pos < end && (code.charCodeAt(pos) !== char || code.charCodeAt(pos - 1) === CharCode.backslash));
-                        ++pos
+                        while (++pos < end) {
+                            if (code.charCodeAt(pos) === CharCode.backslash) {
+                                ++pos
+                                continue
+                            }
+                            if (code.charCodeAt(pos) === char) {
+                                ++pos
+                                break
+                            }
+                        }
                         break
 
                     // Entering a template literal.
@@ -108,7 +116,7 @@ export class Raker extends MagicString {
                     // we recursively call ourselves for easy handling of their contents.
                     case CharCode.backtick:
                         pos++
-                        while (pos < end && (code.charCodeAt(pos) !== CharCode.backtick || code.charCodeAt(pos - 1) === CharCode.backslash)) {
+                        while (pos < end && (code.charCodeAt(pos) !== CharCode.backtick || (code.charCodeAt(pos - 1) === CharCode.backslash && code.charCodeAt(pos - 2) !== CharCode.backslash))) {
                             if (code.charCodeAt(pos) === CharCode.dollar && code.charCodeAt(pos + 1) === CharCode.openBrace) {
                                 pos = scan(pos + 1, true)
                             }
