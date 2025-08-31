@@ -39,11 +39,15 @@
     "!*.map"
   ],
   "scripts": {
-    "prebuild": "tsc -p tsconfig.build.json",
-    "build": "rollup -c",
+    "prebuild": "npm run clean",
+    "build": "npm run build:ts && npm run build:dts && rollup -c",
+    "build:ts": "tsc -p tsconfig.build.json --removeComments",
+    "build:dts": "tsc -p tsconfig.build.json --declaration --emitDeclarationOnly --removeComments false",
+    "clean": "rimraf dist out",
     "pretest": "npm run build",
     "test": "npm run testOnly",
-    "testOnly": "node --import @septh/ts-run --test \"test/**/*.test.ts\""
+    "testOnly": "node --import=@septh/ts-run --test \"test/**/*.test.ts\"",
+    "prepublishOnly": "npm run build"
   },
   "peerDependencies": {
     "rollup": "^4.0.0"
@@ -56,6 +60,7 @@
     "@types/node": "^22.8.1",
     "estree-walker": "^3.0.3",
     "magic-string": "^0.30.12",
+    "rimraf": "^6.0.1",
     "rollup": "^4.24.2",
     "rollup-plugin-node-externals": "^8.0.0",
     "tslib": "^2.8.0",
