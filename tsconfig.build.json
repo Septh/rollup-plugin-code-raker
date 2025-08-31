@@ -3,6 +3,9 @@
   "include": [
     "source"
   ],
+  "exclude": [
+    "**/zz*"
+  ],
   "compilerOptions": {
 
     // Input
