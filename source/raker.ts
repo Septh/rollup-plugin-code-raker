@@ -115,27 +115,31 @@ export class Raker extends MagicString {
                     // If substitution slices (anything between '${' and '}') are found,
                     // we recursively call ourselves for easy handling of their contents.
                     case CharCode.backtick:
-                        pos++
-                        while (pos < end && (code.charCodeAt(pos) !== CharCode.backtick || (code.charCodeAt(pos - 1) === CharCode.backslash && code.charCodeAt(pos - 2) !== CharCode.backslash))) {
-                            if (code.charCodeAt(pos) === CharCode.dollar && code.charCodeAt(pos + 1) === CharCode.openBrace) {
-                                pos = scan(pos + 1, true)
+                        while (++pos < end) {
+                            if (code.charCodeAt(pos) === CharCode.backslash) {
+                                ++pos
+                                continue
                             }
-                            else ++pos
+                            if (code.charCodeAt(pos) === CharCode.backtick) {
+                                ++pos
+                                break
+                            }
+                            if (code.charCodeAt(pos) === CharCode.dollar && code.charCodeAt(pos + 1) === CharCode.openBrace) {
+                                pos = scan(pos + 1, true) - 1
+                            }
                         }
-                        ++pos
                         break
 
                     // When scanning inside a template literal substitution slice, we track brace opening/closing
                     // so as not to mistake a closing brace for the end of that slice.
                     case CharCode.openBrace:
                         ++pos
-                        if (inTemplate)
-                            ++braces
+                        ++braces
                         break
 
                     case CharCode.closeBrace:
                         ++pos
-                        if (inTemplate && --braces === 0)
+                        if (--braces === 0 && inTemplate)
                             return pos
                         break
 
