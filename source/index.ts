@@ -66,11 +66,11 @@ export interface Options {
 }
 
 interface Preset {
-    licenses?:    (comment: string) => boolean
-    docs?:        (comment: string) => boolean
-    annotations?: boolean
-    console?:     (method: string, statement: string) => boolean
-    debugger?:    boolean
+    licenses:    (comment: string) => boolean
+    docs:        (comment: string) => boolean
+    annotations: () => boolean
+    console:     (method: string, statement: string) => boolean
+    debugger:    () => boolean
 }
 
 type PresetNames = Required<Options>['preset']
@@ -81,30 +81,45 @@ type PresetNames = Required<Options>['preset']
  */
 export function codeRaker(options: Options = {}): Plugin {
 
-    const remove = () => true
-    const allConsoleMethods = Object.entries(console).reduce((methods, [ name, prop ]) => {
+    const allConsoleMethods = Object.entries(console).reduce((result, [ name, prop ]) => {
         if (typeof prop === 'function' && typeof name === 'string')
-            methods.push(name)
-        return methods
+            result.push(name)
+        return result
     }, [] as string[])
+    const remove = () => true,
+          keep = () => false
     const presets: Record<PresetNames | 'all' | 'none', Preset> = {
+        // A preset that removes everything. This is the default.
         all: {
             licenses: remove,
             docs: remove,
-            annotations: true,
+            annotations: remove,
             console: remove,
-            debugger: true
+            debugger: remove
         },
-        none: {},
+        // A preset that removes nothing.
+        none: {
+            licenses: keep,
+            docs: keep,
+            annotations: keep,
+            console: keep,
+            debugger: keep
+        },
+        // The 'library' preset.
         library: {
+            licenses: keep,
+            docs: keep,
+            annotations: keep,
             console: remove,
-            debugger: true
+            debugger: remove
         },
+        // The 'application' preset.
         application: {
+            licenses: keep,
             docs: remove,
-            annotations: true,
+            annotations: remove,
             console: createFilter(allConsoleMethods, [ 'info', 'warn', 'error', 'debug' ]),
-            debugger: true
+            debugger: remove
         },
         // @ts-expect-error
         __proto__: null
@@ -121,17 +136,16 @@ export function codeRaker(options: Options = {}): Plugin {
         name: 'code-raker',
 
         transform(code) {
-            if (!config.debugger && !config.console)
-                return null
 
             const raker = new Raker(code)
             walk(this.parse(code), {
+                // NB: inside this block, `this` is the WalkerContext
                 enter(node, parent) {
-                    if (node.type === 'DebuggerStatement' && config.debugger) {
+                    if (node.type === 'DebuggerStatement' && config.debugger()) {
                         raker.rakeAstNode(node, parent!)
                         this.skip()
                     }
-                    else if (node.type === 'CallExpression' && config.console) {
+                    else if (node.type === 'CallExpression') {
                         const { callee } = node
                         if (
                             callee.type === 'MemberExpression'
@@ -155,11 +169,11 @@ export function codeRaker(options: Options = {}): Plugin {
         renderChunk(code) {
             const raker = new Raker(code)
             raker.rakeComments(comment => Boolean(
-                licenseStartRx.test(comment) ? config.licenses?.(comment)
+                licenseStartRx.test(comment) ? config.licenses(comment)
                 : docStartRx.test(comment) ? (
-                    docLicenseTagRx.test(comment) ? config.licenses?.(comment) : config.docs?.(comment)
+                    docLicenseTagRx.test(comment) ? config.licenses(comment) : config.docs(comment)
                 )
-                : annotationRx.test(comment) ? config.annotations
+                : annotationRx.test(comment) ? config.annotations()
                 : true // Meaningless comments are always removed
             ))
 
