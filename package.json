@@ -1,6 +1,6 @@
 {
   "name": "rollup-plugin-code-raker",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "A Rollup plugin that rakes your bundle to remove dead leaves.",
   "keywords": [
     "rollup",
