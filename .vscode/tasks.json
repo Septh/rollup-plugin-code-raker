@@ -2,28 +2,34 @@
   "version": "2.0.0",
   "tasks": [
     {
-      "label": "tsc:clean",
-      "type": "shell",
-      "command": "rm -rf ./out",
+      "label": "clean",
+      "type": "npm",
+      "script": "clean",
+      "presentation": {
+        "reveal": "silent",
+        "clear": true
+      }
     },
     {
-      "label": "tsc:build",
+      "label": "build",
       "group": {
         "kind": "build",
         "isDefault": true,
       },
       "type": "typescript",
-      "tsconfig": "./tsconfig.build.json",
+      "tsconfig": "tsconfig.build.json",
       "option": "watch",
       "problemMatcher": [
         "$tsc-watch"
       ],
-      "isBackground": true,
-      "dependsOn": [ "tsc:clean" ],
+      "presentation": {
+        "reveal": "silent"
+      },
+      "dependsOn": [ "clean" ],
       "dependsOrder": "sequence",
       "runOptions": {
         "runOn": "folderOpen"
-      },
+      }
     }
   ]
 }
