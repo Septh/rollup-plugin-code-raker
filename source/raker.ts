@@ -25,10 +25,10 @@ export class Raker extends MagicString {
         return this
     }
 
-    public rakeBetweenNodes(start: number, end: number, shouldRemoveComment: (comment: string) => boolean): void {
+    public rakeTextBetweenNodes(from: number, to: number, shouldRemoveComment: (comment: string) => boolean): void {
         const re = /(?<line>[/][/][^\n]*)|(?<block>[/][*].*?[*][/])/gsd
 
-        const text = this.original.slice(start, end)
+        const text = this.original.slice(from, to)
         let raked = text
 
         const matches = Array.from(text.matchAll(re)) as RegExpExecArrayWithGroupsAndIndices<'line' | 'block'>[]
@@ -36,40 +36,38 @@ export class Raker extends MagicString {
             for (let i = matches.length - 1; i >= 0; i--) {
                 const { indices, groups } = matches[i]
                 if (groups.line) {
-                    let [ from, to ] = indices.groups.line!
+                    let [ start, end ] = indices.groups.line!
 
                     // Back to the first non-space character before the comment.
-                    while (from > 0 && space.has(text.charCodeAt(from - 1)))
-                        --from
+                    while (start > 0 && space.has(text.charCodeAt(start - 1)))
+                        --start
 
-                    raked = raked.slice(0, from) + raked.slice(to)
+                    raked = raked.slice(0, start) + raked.slice(end)
                 }
-                else if (groups.block) {
-                    let [ from, to ] = indices.groups.block!
-                    if (shouldRemoveComment(groups.block)) {
+                else if (groups.block && shouldRemoveComment(groups.block)) {
+                    let [ start, end ] = indices.groups.block!
 
-                        // Back to the first non-space character before the comment.
-                        let before = from
-                        while (before > 0 && space.has(text.charCodeAt(before - 1)))
-                            --before
+                    // Back to the first non-space character before the comment.
+                    let before = start
+                    while (before > 0 && space.has(text.charCodeAt(before - 1)))
+                        --before
 
-                        // Forward to the first non-space character after the comment.
-                        let after = to
-                        while (after < text.length && space.has(text.charCodeAt(after)))
-                            ++after
+                    // Forward to the first non-space character after the comment.
+                    let after = end
+                    while (after < text.length && space.has(text.charCodeAt(after)))
+                        ++after
 
-                        // If the comment ends a line and there is no code before it, remove the whole line.
-                        if (lineTerminators.has(text.charCodeAt(after))) {
-                            from = before
-                            to = ++after
-                        }
-                        else if (before === 0 || !lineTerminators.has(text.charCodeAt(before - 1)))
-                            from = before
-                        else
-                            to = after
-
-                        raked = raked.slice(0, from) + raked.slice(to)
+                    // If the comment ends a line and there is no code before it, remove the whole line.
+                    if (lineTerminators.has(text.charCodeAt(after))) {
+                        start = before
+                        end = ++after
                     }
+                    else if (before === 0 || !lineTerminators.has(text.charCodeAt(before - 1)))
+                        start = before
+                    else
+                        end = after
+
+                    raked = raked.slice(0, start) + raked.slice(end)
                 }
             }
         }
@@ -78,6 +76,6 @@ export class Raker extends MagicString {
         if (raked === '\n')
             raked = ''
         if (raked !== text)
-            this.update(start, end, raked)
+            this.update(from, to, raked)
     }
 }

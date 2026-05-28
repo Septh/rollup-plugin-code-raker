@@ -74,22 +74,16 @@ interface Preset {
     debugger:    () => boolean
 }
 
-type PresetNames = Required<Options>['preset']
-
 /**
  * A plugin that 'rakes' your code to remove dead leaves
  * such as `console` calls, `debugger` statements, and useless comments.
  */
 export function codeRaker(options: Options = {}): Plugin {
 
-    const allConsoleMethods = Object.entries(console).reduce((result, [ name, prop ]) => {
-        if (typeof prop === 'function' && typeof name === 'string')
-            result.push(name)
-        return result
-    }, [] as string[])
+    const consoleMethods = Object.keys(console).filter(name => typeof console[name as keyof Console] === 'function')
     const remove = () => true,
           keep = () => false
-    const presets: Record<PresetNames | 'all' | 'none', Preset> = {
+    const presets: Record<'all' | 'none' | NonNullable<Options['preset']>, Preset> = {
         // A preset that removes everything. This is the default.
         all: {
             licenses: remove,
@@ -119,11 +113,9 @@ export function codeRaker(options: Options = {}): Plugin {
             licenses: keep,
             docs: remove,
             annotations: remove,
-            console: createFilter(allConsoleMethods, [ 'info', 'warn', 'error', 'debug' ]),
+            console: createFilter(consoleMethods, [ 'info', 'warn', 'error', 'debug' ]),
             debugger: remove
-        },
-        // @ts-expect-error
-        __proto__: null
+        }
     }
 
     const licenseStartRx  = /^\/\*\![ \r\n\u2028\u2029]/    // /*!<space or line terminator>
@@ -173,12 +165,12 @@ export function codeRaker(options: Options = {}): Plugin {
                         // `node` is the first child of `prev`
                         if ((node.start - prev.start) > 1) {
                             // And there is text before it.
-                            raker.rakeBetweenNodes(prev.start, node.start, shouldRemove)
+                            raker.rakeTextBetweenNodes(prev.start, node.start, shouldRemove)
                         }
                     }
                     else if ((node.start - prev.end) > 1) {
                         // `node` immediately follows `prev` and there is text between them.
-                        raker.rakeBetweenNodes(prev.end, node.start, shouldRemove)
+                        raker.rakeTextBetweenNodes(prev.end, node.start, shouldRemove)
                     }
                     prev = node
                     context.next()
@@ -225,24 +217,23 @@ export function codeRaker(options: Options = {}): Plugin {
                 return {
                     licenses: (
                         licenses === undefined ? preset.licenses
-                        : isBoolean(licenses) ? (licenses ? presets.all.licenses : presets.none.licenses)
-                        : isFunction(licenses) ? licenses
-                        : fail('comments.licenses')
+                            : isBoolean(licenses) ? (licenses ? presets.all.licenses : presets.none.licenses)
+                            : isFunction(licenses) ? licenses
+                            : fail('comments.licenses')
                     ),
                     docs: (
                         docs === undefined ? preset.docs
-                        : isBoolean(docs) ? (docs ? presets.all.docs : presets.none.docs)
-                        : isFunction(docs) ? docs
-                        : fail('comments.docs')
+                            : isBoolean(docs) ? (docs ? presets.all.docs : presets.none.docs)
+                            : isFunction(docs) ? docs
+                            : fail('comments.docs')
                     ),
                     annotations: (
                         annotations === undefined ? preset.annotations
-                        : isBoolean(annotations) ? (annotations ? presets.all.annotations : presets.none.annotations)
-                        : fail('comments.annotations')
+                            : isBoolean(annotations) ? (annotations ? presets.all.annotations : presets.none.annotations)
+                            : fail('comments.annotations')
                     )
                 }
             }
-
             fail('comments')
         }
 
@@ -255,14 +246,13 @@ export function codeRaker(options: Options = {}): Plugin {
             if (isFunction(option))
                 return { console: option }
             if (isObject(option)) {
-                const { include = allConsoleMethods, exclude = [] } = option
+                const { include = consoleMethods, exclude = [] } = option
                 if (!Array.isArray(include))
                     fail('console.include')
                 if (!Array.isArray(exclude))
                     fail('console.exclude')
                 return { console: createFilter(include, exclude) }
             }
-
             fail('console')
         }
 
@@ -272,7 +262,6 @@ export function codeRaker(options: Options = {}): Plugin {
                 return { debugger: preset.debugger }
             if (isBoolean(option))
                 return { debugger: option ? presets.all.debugger : presets.none.debugger }
-
             fail('debugger')
         }
 
@@ -289,7 +278,7 @@ export function codeRaker(options: Options = {}): Plugin {
         }
 
         function fail(optionName: string): never {
-            throw new Error(`Invalid value for "${optionName}" option.`)
+            throw new TypeError(`Invalid value for "${optionName}" option.`)
         }
     }
 
