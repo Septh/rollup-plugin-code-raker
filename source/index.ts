@@ -1,5 +1,6 @@
-import { walk } from 'estree-walker'
-import type { AstNode, Plugin } from 'rollup'
+import { walk } from 'zimmerframe'
+import type { Plugin } from 'rollup'
+import type { Node as AstNode } from 'estree'
 import { Raker } from './raker.js'
 
 export interface Options {
@@ -138,29 +139,24 @@ export function codeRaker(options: Options = {}): Plugin {
         transform(code) {
             const raker = new Raker(code)
             const removeDebuggerStatements = config.debugger()
-            walk(this.parse(code), {
-                // NB: inside this block, `this` is the WalkerContext
-                enter(node, parent) {
-                    if (node.type === 'DebuggerStatement') {
-                        if (removeDebuggerStatements) {
-                            raker.rakeNode(node, parent!)
-                            this.skip()
-                        }
+            walk(this.parse(code) as AstNode, {}, {
+                DebuggerStatement(node, context) {
+                    if (removeDebuggerStatements)
+                        raker.rakeNode(node, context.path.at(-1)!)
+                },
+
+                CallExpression(node, context) {
+                    const { callee } = node
+                    if (
+                        callee.type === 'MemberExpression'
+                        && callee.object.type === 'Identifier'
+                        && callee.object.name === 'console'
+                        && callee.property.type === 'Identifier'
+                        && config.console(callee.property.name, code.slice(node.start, node.end))
+                    ) {
+                        raker.rakeNode(node, context.path.at(-1)!)
                     }
-                    else if (node.type === 'CallExpression') {
-                        const { callee } = node
-                        if (
-                            callee.type === 'MemberExpression'
-                            && callee.object.type === 'Identifier'
-                            && callee.object.name === 'console'
-                            && callee.property.type === 'Identifier'
-                            && config.console(callee.property.name, code.slice(node.start, node.end))
-                        ) {
-                            raker.rakeNode(node, parent!)
-                            this.skip()
-                        }
-                    }
-                }
+                },
             })
 
             return raker.hasChanged()
@@ -171,8 +167,8 @@ export function codeRaker(options: Options = {}): Plugin {
         renderChunk(code) {
             const raker = new Raker(code)
             let prev = { start: NaN, end: NaN } as AstNode
-            walk(this.parse(code), {
-                enter(node) {
+            walk(this.parse(code) as AstNode, {}, {
+                _(node, context) {
                     if (node.start >= prev.start && node.end <= prev.end) {
                         // `node` is the first child of `prev`
                         if ((node.start - prev.start) > 1) {
@@ -185,6 +181,7 @@ export function codeRaker(options: Options = {}): Plugin {
                         raker.rakeBetweenNodes(prev.end, node.start, shouldRemove)
                     }
                     prev = node
+                    context.next()
                 }
             })
 

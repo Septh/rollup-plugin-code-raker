@@ -1,11 +1,7 @@
 {
   "extends": "./tsconfig.json",
-  "include": [
-    "source"
-  ],
-  "exclude": [
-    "**/zz*"
-  ],
+  "include": [ "source" ],
+  "exclude": [ "**/zz*" ],
   "compilerOptions": {
 
     // Input
@@ -18,6 +14,8 @@
     "declaration": true,
     "declarationMap": true,
     "preserveConstEnums": false,
-    "noEmit": false,
+    "allowJs": false,
+    "checkJs": false,
+    "noEmit": false
   }
 }

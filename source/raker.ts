@@ -1,5 +1,5 @@
 import MagicString from 'magic-string'
-import type { AstNode } from 'rollup'
+import type { Node as AstNode } from 'estree'
 import { space, lineTerminators } from './charcode.js'
 
 export class Raker extends MagicString {

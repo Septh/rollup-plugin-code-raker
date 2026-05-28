@@ -21,5 +21,6 @@
         "--import", "@septh/ts-run"
       ]
     }
-  ]
+  ],
+  "js/ts.tsdk.path": "node_modules/typescript/lib"
 }
