@@ -1,5 +1,5 @@
 import { walk } from 'estree-walker'
-import type { Plugin } from 'rollup'
+import type { AstNode, Plugin } from 'rollup'
 import { Raker } from './raker.js'
 
 export interface Options {
@@ -136,14 +136,16 @@ export function codeRaker(options: Options = {}): Plugin {
         name: 'code-raker',
 
         transform(code) {
-
             const raker = new Raker(code)
+            const removeDebuggerStatements = config.debugger()
             walk(this.parse(code), {
                 // NB: inside this block, `this` is the WalkerContext
                 enter(node, parent) {
-                    if (node.type === 'DebuggerStatement' && config.debugger()) {
-                        raker.rakeAstNode(node, parent!)
-                        this.skip()
+                    if (node.type === 'DebuggerStatement') {
+                        if (removeDebuggerStatements) {
+                            raker.rakeNode(node, parent!)
+                            this.skip()
+                        }
                     }
                     else if (node.type === 'CallExpression') {
                         const { callee } = node
@@ -154,7 +156,7 @@ export function codeRaker(options: Options = {}): Plugin {
                             && callee.property.type === 'Identifier'
                             && config.console(callee.property.name, code.slice(node.start, node.end))
                         ) {
-                            raker.rakeAstNode(node, parent!)
+                            raker.rakeNode(node, parent!)
                             this.skip()
                         }
                     }
@@ -168,18 +170,35 @@ export function codeRaker(options: Options = {}): Plugin {
 
         renderChunk(code) {
             const raker = new Raker(code)
-            raker.rakeComments(comment => Boolean(
-                licenseStartRx.test(comment) ? config.licenses(comment)
-                : docStartRx.test(comment) ? (
-                    docLicenseTagRx.test(comment) ? config.licenses(comment) : config.docs(comment)
-                )
-                : annotationRx.test(comment) ? config.annotations()
-                : true // Meaningless comments are always removed
-            ))
+            let prev = { start: NaN, end: NaN } as AstNode
+            walk(this.parse(code), {
+                enter(node) {
+                    if (node.start >= prev.start && node.end <= prev.end) {
+                        // `node` is the first child of `prev`
+                        if ((node.start - prev.start) > 1) {
+                            // And there is text before it.
+                            raker.rakeBetweenNodes(prev.start, node.start, shouldRemove)
+                        }
+                    }
+                    else if ((node.start - prev.end) > 1) {
+                        // `node` immediately follows `prev` and there is text between them.
+                        raker.rakeBetweenNodes(prev.end, node.start, shouldRemove)
+                    }
+                    prev = node
+                }
+            })
 
             return raker.hasChanged()
                 ? { code: raker.toString(), map: raker.generateMap() }
                 : null
+
+            function shouldRemove(comment: string): boolean {
+                return licenseStartRx.test(comment) ? config.licenses(comment)
+                    : docStartRx.test(comment) ?
+                        docLicenseTagRx.test(comment) ? config.licenses(comment) : config.docs(comment)
+                    : annotationRx.test(comment) ? config.annotations()
+                    : true // Meaningless comments are always removed
+            }
         }
     }
 
@@ -191,7 +210,7 @@ export function codeRaker(options: Options = {}): Plugin {
         return {
             ...getCommentsConfig(),
             ...getConsoleConfig(),
-            ...getDebuggerConfig()
+            ...getDebuggerConfig(),
         }
 
         function getCommentsConfig(): Pick<Preset, 'licenses' | 'docs' | 'annotations'> {

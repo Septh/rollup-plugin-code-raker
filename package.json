@@ -43,7 +43,7 @@
     "prebuild": "npm run clean",
     "build": "npm run build:js && npm run build:dts && rollup -c",
     "build:js": "tsc -p tsconfig.build.json --declaration false --declarationMap false --removeComments",
-    "build:dts": "tsc -p tsconfig.build.json --declaration --emitDeclarationOnly --removeComments false",
+    "build:dts": "tsc -p tsconfig.build.json --declaration --emitDeclarationOnly --declarationMap false --removeComments false",
     "pretest": "npm run build",
     "test": "node --import=@septh/ts-run --test \"test/**/*.test.ts\"",
     "testOnly": "npm run test --ignore-scripts"

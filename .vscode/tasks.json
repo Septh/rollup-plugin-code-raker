@@ -28,7 +28,7 @@
       "dependsOn": [ "clean" ],
       "dependsOrder": "sequence",
       "runOptions": {
-        "runOn": "folderOpen"
+        // "runOn": "folderOpen"
       }
     }
   ]
