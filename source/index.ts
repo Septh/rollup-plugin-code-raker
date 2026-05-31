@@ -131,24 +131,27 @@ export function codeRaker(options: Options = {}): Plugin {
         transform(code) {
             const raker = new Raker(code)
             const removeDebuggerStatements = config.debugger()
-            walk(this.parse(code) as AstNode, {}, {
+            const removeConsoleCalls = config.console !== keep
+            walk(this.parse(code) as AstNode, null, {
                 DebuggerStatement(node, context) {
                     if (removeDebuggerStatements)
                         raker.rakeNode(node, context.path.at(-1)!)
                 },
 
                 CallExpression(node, context) {
-                    const { callee } = node
-                    if (
-                        callee.type === 'MemberExpression'
-                        && callee.object.type === 'Identifier'
-                        && callee.object.name === 'console'
-                        && callee.property.type === 'Identifier'
-                        && config.console(callee.property.name, code.slice(node.start, node.end))
-                    ) {
-                        raker.rakeNode(node, context.path.at(-1)!)
+                    if (removeConsoleCalls) {
+                        const { callee } = node
+                        if (
+                            callee.type === 'MemberExpression'
+                            && callee.object.type === 'Identifier'
+                            && callee.object.name === 'console'
+                            && callee.property.type === 'Identifier'
+                            && config.console(callee.property.name, code.slice(node.start, node.end))
+                        ) {
+                            raker.rakeNode(node, context.path.at(-1)!)
+                        }
                     }
-                },
+                }
             })
 
             return raker.hasChanged()
@@ -158,22 +161,21 @@ export function codeRaker(options: Options = {}): Plugin {
 
         renderChunk(code) {
             const raker = new Raker(code)
-            let prev = { start: NaN, end: NaN } as AstNode
-            walk(this.parse(code) as AstNode, {}, {
+            walk(this.parse(code) as AstNode, { start: NaN, end: NaN } as AstNode, {
                 _(node, context) {
-                    if (node.start >= prev.start && node.end <= prev.end) {
-                        // `node` is the first child of `prev`
-                        if ((node.start - prev.start) > 1) {
+                    const { state: previous } = context
+                    if (node.start >= previous.start && node.end <= previous.end) {
+                        // `node` is the first child of `previous`.
+                        if ((node.start - previous.start) > 1) {
                             // And there is text before it.
-                            raker.rakeTextBetweenNodes(prev.start, node.start, shouldRemove)
+                            raker.rakeTextBetweenNodes(previous.start, node.start, shouldRemove)
                         }
                     }
-                    else if ((node.start - prev.end) > 1) {
-                        // `node` immediately follows `prev` and there is text between them.
-                        raker.rakeTextBetweenNodes(prev.end, node.start, shouldRemove)
+                    else if ((node.start - previous.end) > 1) {
+                        // `node` immediately follows `previous` and there is text between them.
+                        raker.rakeTextBetweenNodes(previous.end, node.start, shouldRemove)
                     }
-                    prev = node
-                    context.next()
+                    context.next(node)
                 }
             })
 
