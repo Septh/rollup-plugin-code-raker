@@ -45,7 +45,7 @@ export interface Options {
      * Default depends on the selected preset:
      * - default: preserve nothing.
      * - `'library'`: remove all `console` methods calls.
-     * - `'application'`: preserve `info`, `warn`, `error` and `debug` methods calls, remove all others.
+     * - `'application'`: preserve `log`, `info`, `warn` and `error` methods calls, remove all others.
      */
     console?:  boolean | ((method: string, statement: string) => boolean) | {
         /**
@@ -113,7 +113,7 @@ export function codeRaker(options: Options = {}): Plugin {
             licenses: keep,
             docs: remove,
             annotations: remove,
-            console: createFilter(consoleMethods, [ 'info', 'warn', 'error', 'debug' ]),
+            console: createFilter(consoleMethods, [ 'log', 'info', 'warn', 'error' ]),
             debugger: remove
         }
     }

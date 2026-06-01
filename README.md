@@ -93,7 +93,7 @@ export interface Options {
      * Default depends on the selected preset:
      * - default: remove all `console` methods calls.
      * - library: remove all `console` methods calls.
-     * - application: preserve `info`, `warn`, `error` and `debug` methods calls,
+     * - `'application'`: preserve `log`, `info`, `warn` and `error` methods calls, remove all others.
      *   remove all others.
      */
     console?:  boolean | ((method: string, statement: string) => boolean) | {
