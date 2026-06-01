@@ -154,9 +154,9 @@ export function codeRaker(options: Options = {}): Plugin {
                 }
             })
 
-            return raker.hasChanged()
-                ? { code: raker.toString(), map: raker.generateMap() }
-                : null
+            // MagicString#hasChanged() just does a toString()/compare, so le'ts avoid one toString()
+            const result = raker.toString()
+            return result === code ? null : { code: result, map: raker.generateMap() }
         },
 
         renderChunk(code) {
@@ -180,9 +180,9 @@ export function codeRaker(options: Options = {}): Plugin {
                 }
             })
 
-            return raker.hasChanged()
-                ? { code: raker.toString(), map: raker.generateMap() }
-                : null
+            // MagicString#hasChanged() just does a toString()/compare, so le'ts avoid one toString()
+            const result = raker.toString()
+            return result === code ? null : { code: result, map: raker.generateMap() }
 
             function shouldRemove(comment: string): boolean {
                 return licenseStartRx.test(comment) ? config.licenses(comment)
