@@ -21,8 +21,8 @@ suite('"application" preset', async () => {
         t.assert.strictEqual(regexes.debuggerStatements.test(code), false)
     })
 
-    test('preserves "console.[info|warn|error|debug]" calls and removes all others', (t: TestContext) => {
-        const methods = [ 'info', 'warn', 'error', 'debug' ]
+    test('preserves "console.[log|info|warn|error]" calls and removes all others', (t: TestContext) => {
+        const methods = [ 'log', 'info', 'warn', 'error' ]
         const matches = Array.from(code.matchAll(regexes.consoleCalls)).map(m => m[1])
         t.assert.strictEqual(matches.length, methods.length)
         t.assert.deepEqual(matches, methods)
