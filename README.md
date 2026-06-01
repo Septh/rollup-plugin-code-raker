@@ -25,12 +25,12 @@ npm install --save-dev rollup-plugin-code-raker
 Then import the plugin in your `rollup.config.js`/`vite.config.js`:
 
 ```js
-import rake from 'rollup-plugin-code-raker'
+import codeRaker from 'rollup-plugin-code-raker'
 
 export default {
     ...
     plugins: [
-        rake(/* options */)
+        codeRaker(/* options */)
     ]
 }
 ```
@@ -43,7 +43,7 @@ code-raker uses *presets* to decide what to remove from code.
 
 > [!NOTE]
 > - *Licensing* comments are block comments that start with `/*!` followed by a space or a newline, or documentation comments that contain the `@license` tag.
-> - *Documentation*, or JsDoc/TsDoc comments, are block comments that start with `/**` followed by a space or a newline.
+> - *Documentation*, or JsDoc comments, are block comments that start with `/**` followed by a space or a newline.
 > - *Annotations* are block comments that contain one of these strings: `#__PURE__`, `@__PURE__`, `#__NO_SIDE_EFFECTS__`, `@__NO_SIDE_EFFECTS__`. See https://rollupjs.org/configuration-options/#treeshake-annotations for more info.
 
 All options are optional.
@@ -63,11 +63,12 @@ export interface Options {
      *
      * Default depends on the selected preset:
      * - default: remove all comments.
-     * - `'library'`: preserve licensing, JsDoc/TsDoc and annotation comments, remove everything else.
-     * - application: preserve licensing comments, remove everything else.
+     * - `'library'`: preserve licensing, JsDoc and annotation comments,
+     *   remove everything else.
+     * - `'application'`: preserve licensing comments, remove everything else.
      *
-     * Note that this setting only targets "meaningful" comments; common block comments (`/*`)
-     * and line comments (`//`) are always removed.
+     * Note that this setting only targets "meaningful" comments; bare block
+     * comments (`/*` w/o annotation) and line comments (`//`) are always removed.
      */
     comments?: boolean | {
         /**
@@ -87,16 +88,16 @@ export interface Options {
     }
 
     /**
-     * Set to `true` to remove all `console` calls, `false` to remove none, or a callback
-     * or an object to only remove select `console` calls.
+     * Set to `true` to remove all `console` calls, `false` to remove none,
+     * or a callback or an object to only remove select `console` calls.
      *
      * Default depends on the selected preset:
-     * - default: remove all `console` methods calls.
-     * - library: remove all `console` methods calls.
-     * - `'application'`: preserve `log`, `info`, `warn` and `error` methods calls, remove all others.
-     *   remove all others.
+     * - default: preserve nothing.
+     * - `'library'`: remove all `console` methods calls.
+     * - `'application'`: preserve `log`, `info`, `warn` and `error` methods
+     *   calls, remove all others.
      */
-    console?:  boolean | ((method: string, statement: string) => boolean) | {
+    console?: boolean | ((method: string, statement: string) => boolean) | {
         /**
          * An array of console methods names to remove.
          */
@@ -117,4 +118,4 @@ export interface Options {
 ```
 
 ## License
-MIT.
+MIT

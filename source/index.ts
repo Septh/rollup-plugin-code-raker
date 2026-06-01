@@ -12,15 +12,17 @@ export interface Options {
     preset?: 'library' | 'application'
 
     /**
-     * Set to `true` to remove all comments, `false` to remove none, or an object to only remove select comments.
+     * Set to `true` to remove all comments, `false` to remove none, or an object
+     * to only remove select comments.
      *
      * Default depends on the selected preset:
      * - default: remove all comments.
-     * - `'library'`: preserve licensing, JsDoc/TsDoc and annotation comments, remove everything else.
+     * - `'library'`: preserve licensing, JsDoc and annotation comments,
+     *   remove everything else.
      * - `'application'`: preserve licensing comments, remove everything else.
      *
-     * Note that this setting only targets "meaningful" comments; simple block comments (`/*`)
-     * and line comments (`//`) are always removed.
+     * Note that this setting only targets "meaningful" comments; bare block
+     * comments (`/*` w/o annotation) and line comments (`//`) are always removed.
      */
     comments?: boolean | {
         /**
@@ -40,14 +42,16 @@ export interface Options {
     }
 
     /**
-     * Set to `true` to remove all `console` calls, `false` to remove none, or a callback or an object to only remove select `console` calls.
+     * Set to `true` to remove all `console` calls, `false` to remove none,
+     * or a callback or an object to only remove select `console` calls.
      *
      * Default depends on the selected preset:
      * - default: preserve nothing.
      * - `'library'`: remove all `console` methods calls.
-     * - `'application'`: preserve `log`, `info`, `warn` and `error` methods calls, remove all others.
+     * - `'application'`: preserve `log`, `info`, `warn` and `error` methods
+     *   calls, remove all others.
      */
-    console?:  boolean | ((method: string, statement: string) => boolean) | {
+    console?: boolean | ((method: string, statement: string) => boolean) | {
         /**
          * An array of console methods names to remove.
          */
