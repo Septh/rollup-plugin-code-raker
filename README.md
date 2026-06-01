@@ -38,7 +38,7 @@ export default {
 ## Options
 code-raker uses *presets* to decide what to remove from code.
 - The default preset is a "kill'em all" preset that blindly **removes** all comments (including licensing and documentation comments), all `console.*` calls and `debugger` statements.
-- The `application` preset **preserves** licensing comments and `console.info`, `console.warn`, `console.error` and `console.debug` calls.
+- The `application` preset **preserves** licensing comments and `console.log`, `console.info`, `console.warn` and `console.error` calls.
 - The `library` preset **preserves** licensing and documentation comments.
 
 > [!NOTE]
