@@ -161,9 +161,9 @@ export function codeRaker(options: Options = {}): Plugin {
 
         renderChunk(code) {
             const raker = new Raker(code)
-            walk(this.parse(code) as AstNode, { start: NaN, end: NaN } as AstNode, {
+            let previous = { start: NaN, end: NaN } as AstNode
+            walk(this.parse(code) as AstNode, null, {
                 _(node, context) {
-                    const { state: previous } = context
                     if (node.start >= previous.start && node.end <= previous.end) {
                         // `node` is the first child of `previous`.
                         if ((node.start - previous.start) > 1) {
@@ -175,7 +175,8 @@ export function codeRaker(options: Options = {}): Plugin {
                         // `node` immediately follows `previous` and there is text between them.
                         raker.rakeTextBetweenNodes(previous.end, node.start, shouldRemove)
                     }
-                    context.next(node)
+                    previous = node
+                    context.next()
                 }
             })
 
