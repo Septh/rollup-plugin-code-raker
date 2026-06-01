@@ -77,7 +77,7 @@ export class Raker extends MagicString {
         }
 
         // Remove empty lines.
-        result = result.replaceAll(/[\n\r\u2028\u2029]+/g, '\n')
+        result = result.replaceAll(/[\n\r\u2028\u2029]{2,}/g, '\n')
         if (result.length === 1 && lineTerminators.has(result.charCodeAt(0)))
             this.remove(start, end)
         else if (result !== text)
