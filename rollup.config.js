@@ -29,10 +29,7 @@ export default defineConfig({
         nodeExternals(),
         nodeResolve(),
         commonJS(),
-        codeRaker({
-            preset: 'application',
-            console: true,
-        }),
+        codeRaker(),
         {
             name: 'dts',
             generateBundle() {
