@@ -63,7 +63,7 @@ export interface Options {
      *
      * Default depends on the selected preset:
      * - default: remove all comments.
-     * - library: preserve licensing and JsDoc/TsDoc comments, remove everything else.
+     * - `'library'`: preserve licensing, JsDoc/TsDoc and annotation comments, remove everything else.
      * - application: preserve licensing comments, remove everything else.
      *
      * Note that this setting only targets "meaningful" comments; common block comments (`/*`)
