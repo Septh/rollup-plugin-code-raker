@@ -158,12 +158,34 @@ export function codeRaker(options: Options = {}): Plugin {
                 }
             })
 
-            // MagicString#hasChanged() just does a toString()/compare, so le'ts avoid one toString()
             const result = raker.toString()
             return result === code ? null : { code: result, map: raker.generateMap() }
         },
 
-        renderChunk(code) {
+        renderChunk(code, chunk) {
+            // A short explanation.
+            //
+            // To avoid being fooled by comments inside strings, comment-like regex
+            // patterns, and other JavaScript edge cases, we do not scan the entire
+            // source code. Instead, we walk the AST as if it were a flat list
+            // of nodes rather than a nested structure and we only inspect the text
+            // between successive nodes. There, the only content we can encounter
+            // is a few keywords and punctuation, as well as all whitespace and comments.
+            // That makes harvesting comments much easier and more reliable.
+            //
+            // There is one special case, though: comments at the end of the file.
+            // Because they are not located between two nodes, our algorithm would
+            // simply miss them.
+            //
+            // Fortunately, when the code has exports, Rollup appends its own `export`
+            // statement at the bottom of the file that eliminates de facto our problem.
+            // However, when there are no exports, there is no export statement either.
+            // In this case, we append an empty statement (;) instead (then of course
+            // remove it before returning).
+            const exportless = chunk.exports.length === 0
+            if (exportless)
+                code += '\n;'
+
             const raker = new Raker(code)
             let previous = { start: NaN, end: NaN } as AstNode
             walk(this.parse(code) as AstNode, null, {
@@ -172,20 +194,21 @@ export function codeRaker(options: Options = {}): Plugin {
                         // `node` is the first child of `previous`.
                         if ((node.start - previous.start) > 1) {
                             // And there is text before it.
-                            raker.rakeTextBetweenNodes(previous.start, node.start, shouldRemove)
+                            raker.rakeCommentsBetweenNodes(previous.start, node.start, shouldRemove)
                         }
                     }
                     else if ((node.start - previous.end) > 1) {
                         // `node` immediately follows `previous` and there is text between them.
-                        raker.rakeTextBetweenNodes(previous.end, node.start, shouldRemove)
+                        raker.rakeCommentsBetweenNodes(previous.end, node.start, shouldRemove)
                     }
                     previous = node
                     context.next()
                 }
             })
 
-            // MagicString#hasChanged() just does a toString()/compare, so le'ts avoid one toString()
-            const result = raker.toString()
+            let result = raker.toString()
+            if (exportless)
+                result = result.slice(0, -2)
             return result === code ? null : { code: result, map: raker.generateMap() }
 
             function shouldRemove(comment: string): boolean {
@@ -296,6 +319,10 @@ export function codeRaker(options: Options = {}): Plugin {
             return isIncluded(name) && !isExcluded(name)
         }
     }
+
+    // Dernier
 }
 
 export default codeRaker
+
+// node --import=@septh/ts-run --experimental-ffi --disable-warning=ExperimentalWarning source/zz.ts

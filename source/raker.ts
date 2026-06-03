@@ -26,7 +26,7 @@ export class Raker extends MagicString {
     }
 
     private static commentsRx = /(?<line>[/][/][^\n\r\u2028\u2029]*)|(?<block>[/][*].*?[*][/])/gsd
-    public rakeTextBetweenNodes(start: number, end: number, shouldRemoveComment: (comment: string) => boolean): void {
+    public rakeCommentsBetweenNodes(start: number, end: number, shouldRemoveComment: (comment: string) => boolean): void {
 
         // Find all comments between `start` and `end` in the original text.
         const text = this.original.slice(start, end)
