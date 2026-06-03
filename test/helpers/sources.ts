@@ -54,6 +54,8 @@ console.warn("");
 console.error("");
 console.debug("");
 console.groupEnd();
+
+// An end-of-file comment
 `
 
 export const regexes = {
@@ -74,4 +76,4 @@ export const stats = {
     numAnnotations: Array.from(presets.matchAll(regexes.annotations)).length,
     numConsoleCalls: Array.from(presets.matchAll(regexes.consoleCalls)).length,
     numDebuggerStatements: Array.from(presets.matchAll(regexes.debuggerStatements)).length
-}
+} as const
