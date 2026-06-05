@@ -82,4 +82,11 @@ suite('options', () => {
             debugger: 1
         }))
     })
+
+    test('throws on invalid type for "blankLines" option', t => {
+        t.assert.throws(() => raker({
+            // @ts-expect-error
+            blankLines: 1
+        }))
+    })
 })

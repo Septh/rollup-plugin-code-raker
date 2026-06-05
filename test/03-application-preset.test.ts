@@ -1,9 +1,9 @@
 import { suite, test, type TestContext } from 'node:test'
-import { presets, regexes, stats } from './helpers/sources.ts'
-import { bundle } from './helpers/bundle.js'
+import { source, regexes, stats } from './helpers/source.ts'
+import { rollup } from './helpers/rollup.ts'
 
 suite('"application" preset', async () => {
-    const code = await bundle(presets, { preset: 'application' })
+    const code = await rollup(source, { preset: 'application' })
 
     test('preserves licenses', (t: TestContext) => {
         t.assert.strictEqual(Array.from(code.matchAll(regexes.licenses)).length, stats.numLicenses)

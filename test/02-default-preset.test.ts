@@ -1,16 +1,16 @@
 import { suite, test, type TestContext } from 'node:test'
-import { presets, regexes, stats } from './helpers/sources.ts'
-import { bundle } from './helpers/bundle.js'
+import { source, regexes, stats } from './helpers/source.ts'
+import { rollup } from './helpers/rollup.ts'
 
 suite('by default', async () => {
-    const code = await bundle(presets)
+    const code = await rollup(source)
 
     test('removes line comments', (t: TestContext) => {
-        t.assert.equal(regexes.lineComments.test(code), false)
+        t.assert.strictEqual(regexes.lineComments.test(code), false)
     })
 
     test('removes block comments', (t: TestContext) => {
-        t.assert.equal(regexes.blockComments.test(code), false)
+        t.assert.strictEqual(regexes.blockComments.test(code), false)
     })
 
     test('removes licenses', (t: TestContext) => {
@@ -35,7 +35,7 @@ suite('by default', async () => {
 })
 
 suite('with "comments: false"', async () => {
-    const code = await bundle(presets, { comments: false })
+    const code = await rollup(source, { comments: false })
 
     test('still removes line comments', (t: TestContext) => {
         t.assert.strictEqual(regexes.lineComments.test(code), false)
@@ -62,7 +62,7 @@ suite('with "comments: false"', async () => {
 })
 
 suite('with "comments.licenses: false"', async () => {
-    const code = await bundle(presets, { comments: { licenses: false }})
+    const code = await rollup(source, { comments: { licenses: false }})
 
     test('still removes line comments', (t: TestContext) => {
         t.assert.strictEqual(code.includes('line comment'), false)
@@ -87,7 +87,7 @@ suite('with "comments.licenses: false"', async () => {
 })
 
 suite('with "comments.docs: false"', async () => {
-    const code = await bundle(presets, { comments: { docs: false }})
+    const code = await rollup(source, { comments: { docs: false }})
 
     test('still removes line comments', (t: TestContext) => {
         t.assert.strictEqual(regexes.lineComments.test(code), false)
@@ -112,7 +112,7 @@ suite('with "comments.docs: false"', async () => {
 })
 
 suite('with "comments.annotations: false"', async () => {
-    const code = await bundle(presets, { comments: { annotations: false }})
+    const code = await rollup(source, { comments: { annotations: false }})
 
     test('still removes line comments', (t: TestContext) => {
         t.assert.strictEqual(regexes.lineComments.test(code), false)
@@ -137,7 +137,7 @@ suite('with "comments.annotations: false"', async () => {
 })
 
 suite('with "console: false"', async () => {
-    const code = await bundle(presets, { console: false })
+    const code = await rollup(source, { console: false })
 
     test('preserves all "console.*" calls', (t: TestContext) => {
         const matches = Array.from(code.matchAll(regexes.consoleCalls))
@@ -146,7 +146,7 @@ suite('with "console: false"', async () => {
 })
 
 suite('with "debugger: false"', async () => {
-    const code = await bundle(presets, { debugger: false })
+    const code = await rollup(source, { debugger: false })
 
     test('preserves all "debugger" statements', (t: TestContext) => {
         const matches = Array.from(code.matchAll(regexes.debuggerStatements))
@@ -155,7 +155,7 @@ suite('with "debugger: false"', async () => {
 })
 
 suite('"comments" option with callback overrides', async () => {
-    const code = await bundle(presets, {
+    const code = await rollup(source, {
         comments: {
             licenses: comment => comment.includes('@license'),  // Remove jsDoc-style licenses (there is 1)
             docs: comment => comment.includes('@private')       // Remove doc comments with @private tag (there is 1)
@@ -174,7 +174,7 @@ suite('"comments" option with callback overrides', async () => {
 })
 
 suite('"console" option with callback overrides', async () => {
-    const code = await bundle(presets, {
+    const code = await rollup(source, {
         console: method => method.startsWith('group')           // Remove console.group() and console.groupEnd() (there are 2)
     })
 
@@ -186,7 +186,7 @@ suite('"console" option with callback overrides', async () => {
 
 suite('"console" option with "include" overrides', async () => {
     const methods = [ 'dir', 'group', 'groupEnd' ]          // Remove 4 calls (2 x dir, 1 x group, 1 x groupEnd)
-    const code = await bundle(presets, { console: { include: methods }})
+    const code = await rollup(source, { console: { include: methods }})
 
     test('removes console.* calls set by include[]', (t: TestContext) => {
         const matches = Array.from(code.matchAll(regexes.consoleCalls))
@@ -196,7 +196,7 @@ suite('"console" option with "include" overrides', async () => {
 
 suite('"console" option with "exclude" overrides', async () => {
     const methods = [ 'info', 'warn', 'error', 'debug' ]    // Keep these 4, remove all others
-    const code = await bundle(presets, { console: { exclude: methods }})
+    const code = await rollup(source, { console: { exclude: methods }})
 
     test('preserves console.* calls filtered by exclude[]', (t: TestContext) => {
         const matches = Array.from(code.matchAll(regexes.consoleCalls))

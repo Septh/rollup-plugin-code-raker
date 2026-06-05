@@ -1,6 +1,6 @@
 
 /** Input code for the presets/* tests. */
-export const presets = `\
+export const source = String.raw`
 /*!
  * A license
  */
@@ -24,7 +24,7 @@ const someVar = "something";
  * @param {number} arg2
  * @returns {void}
  */
-export function foo(arg1, arg2) {
+function foo(arg1, arg2) {
     debugger;
 }
 
@@ -34,7 +34,9 @@ function pure() {
 }
 
 function impure() {
-    setTimeout(() => {}, 1000);
+    setTimeout(() => {
+        // An empty code block with a line comment inside
+    }, 1000);
 }
 
 // A line comment
@@ -69,11 +71,11 @@ export const regexes = {
 } as const
 
 export const stats = {
-    numLineComments: Array.from(presets.matchAll(regexes.lineComments)).length,
-    numBlockComments: Array.from(presets.matchAll(regexes.blockComments)).length,
-    numLicenses: Array.from(presets.matchAll(regexes.licenses)).length,
-    numDocs: Array.from(presets.matchAll(regexes.docs)).length,
-    numAnnotations: Array.from(presets.matchAll(regexes.annotations)).length,
-    numConsoleCalls: Array.from(presets.matchAll(regexes.consoleCalls)).length,
-    numDebuggerStatements: Array.from(presets.matchAll(regexes.debuggerStatements)).length
+    numLineComments: Array.from(source.matchAll(regexes.lineComments)).length,
+    numBlockComments: Array.from(source.matchAll(regexes.blockComments)).length,
+    numLicenses: Array.from(source.matchAll(regexes.licenses)).length,
+    numDocs: Array.from(source.matchAll(regexes.docs)).length,
+    numAnnotations: Array.from(source.matchAll(regexes.annotations)).length,
+    numConsoleCalls: Array.from(source.matchAll(regexes.consoleCalls)).length,
+    numDebuggerStatements: Array.from(source.matchAll(regexes.debuggerStatements)).length
 } as const

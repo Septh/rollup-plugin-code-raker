@@ -1,16 +1,13 @@
-import { rollup } from 'rollup'
-import virtual_ from '@rollup/plugin-virtual'
-import raker, { type Options as RakerOptions } from '../../source/index.ts'
+import { rollup as _rollup } from 'rollup'
+import _virtual from '@rollup/plugin-virtual'
+import raker, { type Options as RakerOptions } from '../../dist/index.js'
 
 // Workaround for bad Rollup plugins typings.
-const virtual = virtual_ as unknown as typeof virtual_.default
+const virtual = _virtual as unknown as typeof _virtual.default
 
-export async function bundle(
-    input: string,
-    options: RakerOptions = {}
-): Promise<string> {
+export async function rollup(input: string, options: RakerOptions = {}): Promise<string> {
 
-    const build = await rollup({
+    const build = await _rollup({
         input: 'input',
         plugins: [
             virtual({ input }),
