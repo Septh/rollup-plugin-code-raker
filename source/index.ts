@@ -1,8 +1,13 @@
 import { walk } from 'zimmerframe'
 import type { Plugin } from 'rollup'
 import type { Node as AstNode } from 'estree'
+import { Config } from './config.ts'
 import { Raker } from './raker.js'
 
+/**
+ * A plugin that 'rakes' your code to remove dead leaves
+ * such as `console` calls, `debugger` statements, and useless comments.
+ */
 export interface Options {
     /**
      * The name of a preset to use or extend upon.
@@ -12,17 +17,18 @@ export interface Options {
     preset?: 'library' | 'application'
 
     /**
-     * Set to `true` to remove all comments, `false` to remove none, or an object
-     * to only remove select comments.
+     * Set to `true` to remove all comments, `false` to remove none,
+     * or an object to only remove select comments.
      *
      * Default depends on the selected preset:
      * - default: remove all comments.
-     * - `'library'`: preserve licensing, JsDoc and annotation comments,
-     *   remove everything else.
-     * - `'application'`: preserve licensing comments, remove everything else.
+     * - 'library': preserve licensing, JsDoc and annotation comments,
+     *              remove all others.
+     * - 'application': preserve licensing comments,
+     *                  remove all others.
      *
-     * Note that this setting only targets "meaningful" comments; bare block
-     * comments (`/*` w/o annotation) and line comments (`//`) are always removed.
+     * Note that this setting only targets "meaningful" comments;
+     * simple block comments and line comments are always removed.
      */
     comments?: boolean | {
         /**
@@ -36,7 +42,7 @@ export interface Options {
         docs?: boolean | ((comment: string) => boolean)
 
         /**
-         * Whether to remove annotations.
+         * Whether to remove bundler annotations.
          */
         annotations?: boolean
     }
@@ -46,12 +52,13 @@ export interface Options {
      * or a callback or an object to only remove select `console` calls.
      *
      * Default depends on the selected preset:
-     * - default: preserve nothing.
-     * - `'library'`: remove all `console` methods calls.
-     * - `'application'`: preserve `log`, `info`, `warn` and `error` methods
-     *   calls, remove all others.
+     * - default: remove all `console.*` calls.
+     * - 'library': preserve `log`, `info`, `warn` and `error` methods calls,
+     *              remove all others.
+     * - 'application': preserve `log`, `info`, `warn` and `error` methods calls,
+     *                  remove all others.
      */
-    console?: boolean | ((method: string, statement: string) => boolean) | {
+    console?: boolean | ((method: string) => boolean) | {
         /**
          * An array of console methods names to remove.
          */
@@ -63,87 +70,39 @@ export interface Options {
     }
 
     /**
-     * Set to `true` to remove `debugger` statements, or `false` to leave them in code.
+     * Set to `true` to remove `debugger` statements, or `false` to leave them
+     * in code.
      *
      * Default: `true` in all presets.
      */
     debugger?: boolean
+
+    /**
+     * Set to `true` to remove blank lines, or `false` to leave them in code.
+     *
+     * Default: `true` in all presets.
+     */
+    blankLines?: boolean
 }
 
-interface Preset {
-    licenses:    (comment: string) => boolean
-    docs:        (comment: string) => boolean
-    annotations: () => boolean
-    console:     (method: string, statement: string) => boolean
-    debugger:    () => boolean
-}
+export default function codeRaker(options: Options = {}): Plugin {
 
-/**
- * A plugin that 'rakes' your code to remove dead leaves
- * such as `console` calls, `debugger` statements, and useless comments.
- */
-export function codeRaker(options: Options = {}): Plugin {
-
-    const consoleMethods = Object.keys(console).filter(name => typeof console[name as keyof Console] === 'function')
-    const remove = () => true,
-          keep = () => false
-    const presets: Record<'all' | 'none' | NonNullable<Options['preset']>, Preset> = {
-        // A preset that removes everything. This is the default.
-        all: {
-            licenses: remove,
-            docs: remove,
-            annotations: remove,
-            console: remove,
-            debugger: remove
-        },
-        // A preset that removes nothing.
-        none: {
-            licenses: keep,
-            docs: keep,
-            annotations: keep,
-            console: keep,
-            debugger: keep
-        },
-        // The 'library' preset.
-        library: {
-            licenses: keep,
-            docs: keep,
-            annotations: keep,
-            console: remove,
-            debugger: remove
-        },
-        // The 'application' preset.
-        application: {
-            licenses: keep,
-            docs: remove,
-            annotations: remove,
-            console: createFilter(consoleMethods, [ 'log', 'info', 'warn', 'error' ]),
-            debugger: remove
-        }
-    }
-
-    const licenseStartRx  = /^\/\*\![ \r\n\u2028\u2029]/    // /*!<space or line terminator>
-    const docStartRx      = /^\/\*\*[ \r\n\u2028\u2029]/    // /**<space or line terminator>
-    const docLicenseTagRx = /\s@license\b/
-    const annotationRx    = /[@#]__(?:PURE|NO_SIDE_EFFECTS)__/
-
-    const config = getConfig()
+    const config = new Config(options)
 
     return {
         name: 'code-raker',
 
-        transform(code) {
-            const raker = new Raker(code)
-            const removeDebuggerStatements = config.debugger()
-            const removeConsoleCalls = config.console !== keep
-            walk(this.parse(code) as AstNode, null, {
-                DebuggerStatement(node, context) {
-                    if (removeDebuggerStatements)
-                        raker.rakeNode(node, context.path.at(-1)!)
-                },
+        transform: {
+            order: 'post',
+            handler(code) {
+                const raker = new Raker(code)
+                walk(this.parse(code) as AstNode, null, {
+                    DebuggerStatement(node, context) {
+                        if (config.debugger())
+                            raker.removeStatementNode(node, context.path.at(-1)!)
+                    },
 
-                CallExpression(node, context) {
-                    if (removeConsoleCalls) {
+                    CallExpression(node, context) {
                         const { callee } = node
                         if (
                             callee.type === 'MemberExpression'
@@ -152,177 +111,50 @@ export function codeRaker(options: Options = {}): Plugin {
                             && callee.property.type === 'Identifier'
                             && config.console(callee.property.name, code.slice(node.start, node.end))
                         ) {
-                            raker.rakeNode(node, context.path.at(-1)!)
+                            raker.removeExpressionNode(node, context.path.at(-1)!, context.path.at(-2)!)
                         }
                     }
-                }
-            })
+                })
 
-            const result = raker.toString()
-            return result === code ? null : { code: result, map: raker.generateMap() }
+                const result = raker.toString()
+                return result === code ? null : { code: result, map: raker.generateMap() }
+            }
         },
 
-        renderChunk(code, chunk) {
-            // A short explanation.
-            //
-            // To avoid being fooled by comments inside strings, comment-like regex
-            // patterns, and other JavaScript edge cases, we do not scan the entire
-            // source code. Instead, we walk the AST as if it were a flat list
-            // of nodes rather than a nested structure and we only inspect the text
-            // between successive nodes. There, the only content we can encounter
-            // is a few keywords and punctuation, as well as all whitespace and comments.
-            // That makes harvesting comments much easier and more reliable.
-            //
-            // There is one special case, though: comments at the end of the file.
-            // Because they are not located between two nodes, our algorithm would
-            // simply miss them.
-            //
-            // Fortunately, when the code has exports, Rollup appends its own `export`
-            // statement at the bottom of the file that eliminates de facto our problem.
-            // However, when there are no exports, there is no export statement either.
-            // In this case, we append an empty statement (;) instead (then of course
-            // remove it before returning).
-            const exportless = chunk.exports.length === 0
-            if (exportless)
-                code += '\n;'
-
-            const raker = new Raker(code)
-            let previous = { start: NaN, end: NaN } as AstNode
-            walk(this.parse(code) as AstNode, null, {
-                _(node, context) {
-                    if (node.start >= previous.start && node.end <= previous.end) {
-                        // `node` is the first child of `previous`.
-                        if ((node.start - previous.start) > 1) {
-                            // And there is text before it.
-                            raker.rakeCommentsBetweenNodes(previous.start, node.start, shouldRemove)
+        renderChunk: {
+            order: 'post',
+            handler(code) {
+                const raker = new Raker(code += '\n;')
+                let previousNode = { start: NaN, end: NaN } as AstNode
+                walk(this.parse(code) as AstNode, null, {
+                    _(node, context) {
+                        if (node.start >= previousNode.start && node.end <= previousNode.end) {
+                            if ((node.start - previousNode.start) > 1)
+                                raker.removeComments(previousNode.start, node.start, config)
                         }
-                    }
-                    else if ((node.start - previous.end) > 1) {
-                        // `node` immediately follows `previous` and there is text between them.
-                        raker.rakeCommentsBetweenNodes(previous.end, node.start, shouldRemove)
-                    }
-                    previous = node
-                    context.next()
-                }
-            })
+                        else if ((node.start - previousNode.end) > 1)
+                            raker.removeComments(previousNode.end, node.start, config)
 
-            let result = raker.toString()
-            if (exportless)
+                        if (raker.isEmptyBlock(node))
+                            raker.removeComments(node.start, node.end, config)
+
+                        previousNode = node
+                        context.next()
+                    }
+                })
+
+                if (config.blankLines())
+                    raker.trimLines()
+
+                let result = raker.toString()
+                if (result === code)
+                    return
+
                 result = result.slice(0, -2)
-            return result === code ? null : { code: result, map: raker.generateMap() }
-
-            function shouldRemove(comment: string): boolean {
-                return licenseStartRx.test(comment) ? config.licenses(comment)
-                    : docStartRx.test(comment) ?
-                        docLicenseTagRx.test(comment) ? config.licenses(comment) : config.docs(comment)
-                    : annotationRx.test(comment) ? config.annotations()
-                    : true // Meaningless comments are always removed
+                return { code: result, map: raker.generateMap() }
             }
         }
     }
-
-    function getConfig(): Preset {
-        const preset = options.preset === undefined ? presets.all
-            : (options.preset === 'application' || options.preset === 'library') ? presets[options.preset]
-            : fail('preset')
-
-        return {
-            ...getCommentsConfig(),
-            ...getConsoleConfig(),
-            ...getDebuggerConfig(),
-        }
-
-        function getCommentsConfig(): Pick<Preset, 'licenses' | 'docs' | 'annotations'> {
-            const { comments: option } = options
-            if (option === undefined) {
-                const { licenses, docs, annotations } = preset
-                return { licenses, docs, annotations }
-            }
-            if (isBoolean(option)) {
-                const { licenses, docs, annotations } = option ? presets.all : presets.none
-                return { licenses, docs, annotations }
-            }
-            if (isObject(option)) {
-                const { licenses, docs, annotations } = option
-                return {
-                    licenses: (
-                        licenses === undefined ? preset.licenses
-                            : isBoolean(licenses) ? (licenses ? presets.all.licenses : presets.none.licenses)
-                            : isFunction(licenses) ? licenses
-                            : fail('comments.licenses')
-                    ),
-                    docs: (
-                        docs === undefined ? preset.docs
-                            : isBoolean(docs) ? (docs ? presets.all.docs : presets.none.docs)
-                            : isFunction(docs) ? docs
-                            : fail('comments.docs')
-                    ),
-                    annotations: (
-                        annotations === undefined ? preset.annotations
-                            : isBoolean(annotations) ? (annotations ? presets.all.annotations : presets.none.annotations)
-                            : fail('comments.annotations')
-                    )
-                }
-            }
-            fail('comments')
-        }
-
-        function getConsoleConfig(): Pick<Preset, 'console'> {
-            const { console: option } = options
-            if (option === undefined)
-                return { console: preset.console }
-            if (isBoolean(option))
-                return { console: option ? presets.all.console : presets.none.console }
-            if (isFunction(option))
-                return { console: option }
-            if (isObject(option)) {
-                const { include = consoleMethods, exclude = [] } = option
-                if (!Array.isArray(include))
-                    fail('console.include')
-                if (!Array.isArray(exclude))
-                    fail('console.exclude')
-                return { console: createFilter(include, exclude) }
-            }
-            fail('console')
-        }
-
-        function getDebuggerConfig(): Pick<Preset, 'debugger'> {
-            const { debugger: option } = options
-            if (option === undefined)
-                return { debugger: preset.debugger }
-            if (isBoolean(option))
-                return { debugger: option ? presets.all.debugger : presets.none.debugger }
-            fail('debugger')
-        }
-
-        function isBoolean(value: unknown): value is boolean {
-            return typeof value === 'boolean'
-        }
-
-        function isObject(value: unknown): value is object {
-            return value !== null && typeof value === 'object'
-        }
-
-        function isFunction(value: unknown): value is Function {
-            return typeof value === 'function'
-        }
-
-        function fail(optionName: string): never {
-            throw new TypeError(`Invalid value for "${optionName}" option.`)
-        }
-    }
-
-    function createFilter(include: string[], exclude: string[]) {
-        const isIncluded = (name: string) => include.length > 0 && include.includes(name)
-        const isExcluded = (name: string) => exclude.length > 0 && exclude.includes(name)
-        return function filter(name: string) {
-            return isIncluded(name) && !isExcluded(name)
-        }
-    }
-
-    // Dernier
 }
 
-export default codeRaker
-
-// node --import=@septh/ts-run --experimental-ffi --disable-warning=ExperimentalWarning source/zz.ts
+export { codeRaker }

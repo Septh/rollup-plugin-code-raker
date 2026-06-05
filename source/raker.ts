@@ -1,86 +1,97 @@
 import MagicString from 'magic-string'
-import type { Node as AstNode } from 'estree'
+import type { Node as AstNode, BlockStatement, Program, StaticBlock, SwitchCase } from 'estree'
 import { spaces, lineTerminators } from './charcode.js'
+import type { Config } from './config.ts'
+
+type Block = Program | BlockStatement | StaticBlock
+type BlockLike = Block | SwitchCase
 
 export class Raker extends MagicString {
 
-    public rakeNode(node: AstNode, parent: AstNode): Raker {
-        let { start, end } = node
-        switch (parent.type) {
-            case 'Program':
-            case 'BlockStatement':
-            case 'ExpressionStatement':
-            case 'StaticBlock':
-                this.remove(start, end)
-                break
-
-            case 'ArrowFunctionExpression':
-                this.update(start, end, '{}')
-                break
-
-            default:
-                this.update(start, end, '(void 0)')
-                break
-        }
-        return this
+    public isEmptyBlock(node: AstNode): boolean {
+        return Raker.blocks.has(node.type as BlockLike['type']) && ((node as Block).body ?? (node as SwitchCase).consequent).length === 0
     }
 
-    private static commentsRx = /(?<line>[/][/][^\n\r\u2028\u2029]*)|(?<block>[/][*].*?[*][/])/gsd
-    public rakeCommentsBetweenNodes(start: number, end: number, shouldRemoveComment: (comment: string) => boolean): void {
+    private static blocks: Set<BlockLike['type']> = new Set([ 'Program', 'BlockStatement', 'StaticBlock', 'SwitchCase' ])
+    public removeStatementNode(node: AstNode, parent: AstNode): void {
 
-        // Find all comments between `start` and `end` in the original text.
-        const text = this.original.slice(start, end)
-        const matches = Array.from(text.matchAll(Raker.commentsRx)) as RegExpExecArrayWithGroupsAndIndices<'line' | 'block'>[]
+        if (Raker.blocks.has(parent.type as BlockLike['type'])) {
+            const text = this.original
+            let { start, end } = node
 
-        // Proceed from "bottom" to "top" of text so that we can cut into the result
-        // without re-offsetting all comments "below" the current one.
+            let before = start
+            while (before > 0 && spaces.has(text.charCodeAt(before - 1)))
+                --before
+
+            let after = end
+            while (after < text.length && spaces.has(text.charCodeAt(after)))
+                ++after
+
+            if (lineTerminators.has(text.charCodeAt(after))) {
+                start = before
+                end = after
+                if (before === 0 || lineTerminators.has(text.charCodeAt(before - 1)))
+                    ++end
+            }
+            else if (after >= end)
+                end = after
+            else
+                start = before
+
+            this.remove(start, end)
+        }
+        else this.update(node.start, node.end, ';')
+    }
+
+    public removeExpressionNode(node: AstNode, parent: AstNode, grandParent: AstNode): void {
+        if (parent.type === 'ExpressionStatement')
+            return this.removeStatementNode(parent, grandParent)
+        this.update(node.start, node.end, '(void 0)')
+    }
+
+    private static commentsRx = /(?<block>[/][*].*?[*][/])|(?<line>[/][/][^\n\r\u2028\u2029]*)/gsd
+    private static noRange = [ -1, -1 ]
+    public removeComments(from: number, to: number, config: Config): void {
+
+        const text = this.original.slice(from, to)
+        const matches = Array.from(text.matchAll(Raker.commentsRx)) as RegExpExecArrayWithGroupsAndIndices<'block' | 'line'>[]
+
         let result = text
         for (let i = matches.length - 1; i >= 0; i--) {
             const { indices, groups } = matches[i]
-            if (groups.line) {
-                let [ from, to ] = indices.groups.line!
 
-                // Back to the first non-space character before the comment.
-                while (from > 0 && spaces.has(result.charCodeAt(from - 1)))
-                    --from
+            let [ start, end ] = groups.line ? indices.groups.line!
+                : groups.block && config.testComment(groups.block) ? indices.groups.block!
+                : Raker.noRange
+            if (start < 0)
+                continue
 
-                // const toRemove = text.slice(from, to)
-                // result = result.replace(toRemove, '')
-                result = result.slice(0, from) + result.slice(to)
+            let before = start
+            while (before > 0 && spaces.has(text.charCodeAt(before - 1)))
+                --before
+
+            let after = end
+            while (after < result.length && spaces.has(text.charCodeAt(after)))
+                ++after
+
+            if (lineTerminators.has(text.charCodeAt(after))) {
+                start = before
+                end = after
+                if (before === 0 || lineTerminators.has(text.charCodeAt(before - 1)))
+                    ++end
             }
-            else if (groups.block && shouldRemoveComment(groups.block)) {
-                let [ from, to ] = indices.groups.block!
+            else if (after >= end)
+                end = after
+            else
+                start = before
 
-                // Back to the first non-space character before the comment.
-                let before = from
-                while (before > 0 && spaces.has(result.charCodeAt(before - 1)))
-                    --before
-
-                // Forward to the first non-space character after the comment.
-                let after = to
-                while (after < result.length && spaces.has(result.charCodeAt(after)))
-                    ++after
-
-                if (lineTerminators.has(result.charCodeAt(after))) {
-                    from = before
-                    to = after
-                }
-                else if (after > to)
-                    to = after
-                else
-                    from = before
-
-                // const toRemove = text.slice(from, to)
-                // result = result.replace(toRemove, '')
-                result = result.slice(0, from) + result.slice(to)
-            }
+            result = result.slice(0, start) + result.slice(end)
         }
 
-        // Remove empty lines.
-        result = result.replaceAll(/[\n\r\u2028\u2029]{2,}/g, '\n')
-        if (result.length === 1 && lineTerminators.has(result.charCodeAt(0)))
-            this.remove(start, end)
-        else if (result !== text)
-            this.update(start, end, result)
+        if (config.blankLines())
+            result = result.replaceAll(/[\n\r\u2028\u2029]{2,}/g, '\n')
+
+        if (result !== text)
+            this.update(from, to, result)
     }
 }
