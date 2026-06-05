@@ -39,7 +39,7 @@ export default {
 code-raker uses *presets* to decide what to remove from code.
 - The default preset is a "kill'em all" preset that blindly **removes** all comments (including licensing and documentation comments), all `console.*` calls and `debugger` statements.
 - The `application` preset **preserves** licensing comments and `console.log`, `console.info`, `console.warn` and `console.error` calls.
-- The `library` preset **preserves** licensing and documentation comments.
+- The `library` preset **preserves** licensing and documentation comments and `console.log`, `console.info`, `console.warn` and `console.error` calls.
 
 > [!NOTE]
 > - *Licensing* comments are block comments that start with `/*!` followed by a space or a newline, or documentation comments that contain the `@license` tag.
@@ -49,7 +49,7 @@ code-raker uses *presets* to decide what to remove from code.
 All options are optional.
 
 ```typescript
-export interface Options {
+interface Options {
     /**
      * The name of a preset to use or extend upon.
      *
@@ -58,17 +58,18 @@ export interface Options {
     preset?: 'library' | 'application'
 
     /**
-     * Set to `true` to remove all comments, `false` to remove none, or an object
-     * to only remove select comments.
+     * Set to `true` to remove all comments, `false` to remove none,
+     * or an object to only remove select comments.
      *
      * Default depends on the selected preset:
      * - default: remove all comments.
-     * - `'library'`: preserve licensing, JsDoc and annotation comments,
-     *   remove everything else.
-     * - `'application'`: preserve licensing comments, remove everything else.
+     * - 'library': preserve licensing, JsDoc and annotation comments,
+     *              remove all others.
+     * - 'application': preserve licensing comments,
+     *                  remove all others.
      *
-     * Note that this setting only targets "meaningful" comments; bare block
-     * comments (`/*` w/o annotation) and line comments (`//`) are always removed.
+     * Note that this setting only targets "meaningful" comments;
+     * simple block comments and line comments are always removed.
      */
     comments?: boolean | {
         /**
@@ -82,7 +83,7 @@ export interface Options {
         docs?: boolean | ((comment: string) => boolean)
 
         /**
-         * Whether to remove annotations.
+         * Whether to remove bundler annotations.
          */
         annotations?: boolean
     }
@@ -92,12 +93,13 @@ export interface Options {
      * or a callback or an object to only remove select `console` calls.
      *
      * Default depends on the selected preset:
-     * - default: preserve nothing.
-     * - `'library'`: remove all `console` methods calls.
-     * - `'application'`: preserve `log`, `info`, `warn` and `error` methods
-     *   calls, remove all others.
+     * - default: remove all `console.*` calls.
+     * - 'library': preserve `log`, `info`, `warn` and `error` methods calls,
+     *              remove all others.
+     * - 'application': preserve `log`, `info`, `warn` and `error` methods calls,
+     *                  remove all others.
      */
-    console?: boolean | ((method: string, statement: string) => boolean) | {
+    console?: boolean | ((method: string) => boolean) | {
         /**
          * An array of console methods names to remove.
          */
@@ -109,11 +111,19 @@ export interface Options {
     }
 
     /**
-     * Set to `true` to remove `debugger` statements, or `false` to leave them in code.
+     * Set to `true` to remove `debugger` statements, or `false` to leave them
+     * in code.
      *
      * Default: `true` in all presets.
      */
     debugger?: boolean
+
+    /**
+     * Set to `true` to remove blank lines, or `false` to leave them in code.
+     *
+     * Default: `true` in all presets.
+     */
+    blankLines?: boolean
 }
 ```
 
