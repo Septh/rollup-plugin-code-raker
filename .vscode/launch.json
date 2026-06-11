@@ -11,9 +11,8 @@
       ],
       "cwd": "${workspaceFolder}",
       "program": "./node_modules/rollup/dist/bin/rollup",
-      "args": [
-        "-c"
-      ],
+      "args": [ "-c" ],
+      "env": { "DEBUG": "1"},
       "console": "internalConsole",
       "outputCapture": "std",
       "internalConsoleOptions": "openOnSessionStart"

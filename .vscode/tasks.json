@@ -3,15 +3,17 @@
   "tasks": [
     {
       "label": "clean",
+      "group": "build",
       "type": "npm",
       "script": "clean",
       "presentation": {
         "reveal": "silent",
+        "group": "build",
         "clear": true
       }
     },
     {
-      "label": "build",
+      "label": "tsc: watch - tsconfig.build.json",
       "group": {
         "kind": "build",
         "isDefault": true,
@@ -19,16 +21,24 @@
       "type": "typescript",
       "tsconfig": "tsconfig.build.json",
       "option": "watch",
-      "problemMatcher": [
-        "$tsc-watch"
-      ],
+      "problemMatcher": "$tsc-watch",
       "presentation": {
-        "reveal": "silent"
+        "reveal": "silent",
+        "group": "build"
       },
-      "dependsOn": [ "clean" ],
-      "dependsOrder": "sequence",
-      "runOptions": {
-        // "runOn": "folderOpen"
+      "dependsOn": "clean",
+      "dependsOrder": "sequence"
+    },
+    {
+      "label": "rollup: watch - rollup.config.js",
+      "group": "build",
+      "type": "process",
+      "command": "node",
+      "echoCommand": true,
+      "args": [ "${workspaceFolder}/node_modules/rollup/dist/bin/rollup", "-cw" ],
+      "presentation": {
+        "reveal": "silent",
+        "group": "build"
       }
     }
   ]
