@@ -1,7 +1,7 @@
 import { walk } from 'zimmerframe'
 import type { Plugin } from 'rollup'
 import type { Node as AstNode } from 'estree'
-import { Config } from './config.ts'
+import { Config } from './config.js'
 import { Raker } from './raker.js'
 
 /**

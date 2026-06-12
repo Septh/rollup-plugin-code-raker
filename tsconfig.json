@@ -12,12 +12,9 @@
     "lib": [ "ESNext" ],
     "types": [ "node" ],
 
-    // Input
+    // Input/output
     "resolveJsonModule": true,
     "checkJs": true,
-
-    // Output
-    "rewriteRelativeImportExtensions": true,
     "noEmit": true,
 
     // Type checking

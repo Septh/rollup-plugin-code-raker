@@ -9,13 +9,9 @@
 
     // Output
     "outDir": "out",
-    "target": "ESNext",
     "sourceMap": true,
     "declaration": true,
-    "declarationMap": true,
     "preserveConstEnums": false,
-    "allowJs": false,
-    "checkJs": false,
     "noEmit": false
   }
 }
