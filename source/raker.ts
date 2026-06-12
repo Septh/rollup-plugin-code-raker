@@ -50,7 +50,7 @@ export class Raker extends MagicString {
     }
 
     private static commentsRx = /(?<block>[/][*].*?[*][/])|(?<line>[/][/][^\n\r\u2028\u2029]*)/gsd
-    private static noRange = [ -1, -1 ]
+    private static noRange = [ -1, -1 ] as const
     public removeComments(from: number, to: number, config: Config): void {
 
         const text = this.original.slice(from, to)
@@ -80,11 +80,36 @@ export class Raker extends MagicString {
                 if (before === 0 || lineTerminators.has(text.charCodeAt(before - 1)))
                     ++end
             }
-            else if (after >= end)
+            else if (before > 0 && lineTerminators.has(text.charCodeAt(before - 1))) {
                 end = after
-            else
-                start = before
+            }
+            else {
+                const spacesBefore = start - before;
+                const spacesAfter = after - end
 
+                start = before
+                end = after
+                if (spacesBefore > 0 && spacesAfter > 0)
+                    ++start
+                else if (spacesBefore > 0) {
+                    const charAfter = this.original.charAt(from + end)
+                    if (/\w/.test(charAfter))
+                        ++start;
+                }
+                else if (spacesAfter > 0) {
+                    const charBefore = this.original.charAt(from + start - 1)
+                    if (/\W/.test(charBefore))
+                        --end;
+                }
+                else {
+                    const charBefore = this.original.charAt(from + start - 1)
+                    const charAfter = this.original.charAt(from + end)
+                    if (/\w/.test(charBefore) && /\w/.test(charAfter)) {
+                        result = result.slice(0, start) + ' ' + result.slice(end)
+                        continue
+                    }
+                }
+            }
             result = result.slice(0, start) + result.slice(end)
         }
 
