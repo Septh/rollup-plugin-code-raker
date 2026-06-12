@@ -1,5 +1,5 @@
 import test, { suite } from 'node:test'
-import raker from '../source/index.ts'
+import raker from '#test'
 
 suite('options', () => {
 

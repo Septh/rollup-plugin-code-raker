@@ -1,6 +1,6 @@
 import { rollup as _rollup } from 'rollup'
 import _virtual from '@rollup/plugin-virtual'
-import raker, { type Options as RakerOptions } from '../../dist/index.js'
+import raker, { type Options as RakerOptions } from '#test'
 
 // Workaround for bad Rollup plugins typings.
 const virtual = _virtual as unknown as typeof _virtual.default
